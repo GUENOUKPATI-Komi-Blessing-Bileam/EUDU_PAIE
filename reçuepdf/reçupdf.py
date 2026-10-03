@@ -3,6 +3,7 @@
 from html import escape
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from PySide6.QtCore import QStandardPaths
 from PySide6.QtGui import QTextDocument
@@ -34,12 +35,26 @@ def create_receipt_pdf(
 
 	output = receipt_pdf_path(numero, output_path)
 	output.parent.mkdir(parents=True, exist_ok=True)
-	printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-	printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
-	printer.setOutputFileName(str(output))
-	document = QTextDocument()
-	document.setHtml(_receipt_html(eleve, paiement))
-	document.print_(printer)
+	temporary = output.with_name(f".{output.stem}.{uuid4().hex}.tmp.pdf")
+	try:
+		printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+		printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+		printer.setOutputFileName(str(temporary))
+		document = QTextDocument()
+		document.setHtml(_receipt_html(eleve, paiement))
+		document.print_(printer)
+		if not temporary.is_file() or temporary.stat().st_size == 0:
+			raise OSError("Qt n’a pas créé le fichier PDF.")
+		with temporary.open("rb") as pdf_file:
+			if pdf_file.read(5) != b"%PDF-":
+				raise OSError("Le fichier généré n’est pas un PDF valide.")
+		temporary.replace(output)
+	except Exception:
+		temporary.unlink(missing_ok=True)
+		raise
+
+	if not output.is_file() or output.stat().st_size == 0:
+		raise OSError(f"Le reçu PDF n’a pas été enregistré : {output}")
 	return output
 
 
@@ -115,7 +130,7 @@ def _format_date(value: Any) -> str:
 
 def _format_currency(amount: float) -> str:
 	formatted = f"{amount:,.2f}".replace(",", " ").replace(".", ",")
-	return f"{formatted} €"
+	return f"{formatted} FCFA"
 
 
 __all__ = ["create_receipt_pdf", "generer_recu_pdf", "receipt_pdf_path"]

@@ -5,7 +5,7 @@ Fonctions utilitaires utilisées par les services métier et les vues.
 Elles regroupent :
 
 * génération du **numéro de reçu** séquentiel (unique dans la base)
-* formatage monétaire (affichage « 12,34 € »)
+* formatage monétaire (affichage « 12,34 FCFA »)
 * calcul du **statut de paiement** (Soldé / Partiellement payé / Non payé)
 * quelques petites aides de conversion de dates
 """
@@ -39,12 +39,12 @@ def generate_receipt_number() -> int:
 # ----------------------------------------------------------------------
 def format_currency(amount: float, locale: str = "fr_FR") -> str:
     """
-    Formatte un montant en euros avec deux décimales et le séparateur
-    décimal français.  Exemple : 1234.5 → « 1 234,50 € ».
+    Formatte un montant en FCFA avec deux décimales et le séparateur
+    décimal français.  Exemple : 1234.5 → « 1 234,50 FCFA ».
 
     Le paramètre `locale` n’est utilisé que pour choisir le séparateur.
     Si la locale n’est pas disponible, on retombe sur le format
-    « 1234,56 € ».
+    « 1234,56 FCFA ».
     """
     # On évite d’importer le module `locale` (qui dépend du système).
     # On se contente d’un remplacement simple.
@@ -52,7 +52,7 @@ def format_currency(amount: float, locale: str = "fr_FR") -> str:
     # Le séparateur de milliers anglais (',') devient un espace insécable
     integer_part = integer_part.replace(",", " ")
     # Le point décimal devient une virgule
-    formatted = f"{integer_part},{decimal_part} €"
+    formatted = f"{integer_part},{decimal_part} FCFA"
     return formatted
 
 

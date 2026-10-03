@@ -68,7 +68,7 @@ class PaiementDAO:
             raise ValueError("Le montant du paiement doit être strictement positif.")
         if montant > solde_actuel:
             raise ValueError(
-                f"Montant trop élevé : solde restant {solde_actuel:.2f} €."
+                f"Montant trop élevé : solde restant {solde_actuel:.2f} FCFA."
             )
 
         # ---------- 3️⃣ Insertion (transaction) ----------

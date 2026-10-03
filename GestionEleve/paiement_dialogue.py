@@ -4,7 +4,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QDate, QLocale, Qt, Signal
+from PySide6.QtCore import QDate, QLocale, QUrl, Qt, Signal
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
 	QComboBox,
 	QDateEdit,
@@ -75,7 +76,7 @@ class PaiementDialog(QDialog):
 		self.montant.setRange(0, 1_000_000_000)
 		self.montant.setDecimals(2)
 		self.montant.setSingleStep(1000)
-		self.montant.setSuffix(" €")
+		self.montant.setSuffix(" FCFA")
 		self.montant.setKeyboardTracking(False)
 		self.date_paiement = QDateEdit()
 		self.date_paiement.setCalendarPopup(True)
@@ -177,6 +178,7 @@ class PaiementDialog(QDialog):
 					"Reçu généré",
 					f"Le reçu R-{int(self._paiement['numero_recu']):06d} est disponible ici :\n{chemin}",
 				)
+				self._ouvrir_pdf(chemin)
 			return
 		montant = self.montant.value()
 		if montant <= 0:
@@ -235,6 +237,7 @@ class PaiementDialog(QDialog):
 			"Paiement enregistré",
 			f"Le paiement est enregistré.\nReçu : R-{int(self._paiement['numero_recu']):06d}\nPDF : {chemin}",
 		)
+		self._ouvrir_pdf(chemin)
 		self.paiement_enregistre.emit(int(self.paiement_id))
 		self.accept()
 
@@ -246,6 +249,16 @@ class PaiementDialog(QDialog):
 		except Exception as exc:
 			self._afficher_erreur(f"Le PDF du reçu n’a pas pu être généré. {exc}")
 			return None
+
+	@staticmethod
+	def _ouvrir_pdf(chemin: Path) -> None:
+		"""Ouvre le reçu généré avec l’application PDF par défaut."""
+		if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(chemin.resolve()))):
+			QMessageBox.warning(
+				None,
+				"Ouverture impossible",
+				f"Le reçu a été généré, mais aucun lecteur PDF n’a pu l’ouvrir.\n\n{chemin}",
+			)
 
 	def _afficher_identite(self) -> None:
 		self.identite.setText(
@@ -274,4 +287,4 @@ class PaiementDialog(QDialog):
 	@staticmethod
 	def _monnaie(montant: float) -> str:
 		texte = f"{montant:,.2f}".replace(",", " ").replace(".", ",")
-		return f"{texte} €"
+		return f"{texte} FCFA"

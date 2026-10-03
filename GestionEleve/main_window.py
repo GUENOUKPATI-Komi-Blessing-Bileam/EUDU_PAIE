@@ -1,8 +1,10 @@
 """Fenêtre principale EduPaie et orchestration des vues."""
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import (
 	QHBoxLayout,
+	QButtonGroup,
 	QLabel,
 	QMainWindow,
 	QMessageBox,
@@ -28,6 +30,7 @@ class MainWindow(QMainWindow):
 		self.setMinimumSize(1050, 680)
 		self.resize(1240, 780)
 		self._eleve_id_courant: int | None = None
+		self._mode_liste = "vue_ensemble"
 		self._construire_interface()
 
 	def _construire_interface(self) -> None:
@@ -44,20 +47,40 @@ class MainWindow(QMainWindow):
 		navigation.setContentsMargins(18, 22, 18, 18)
 		navigation.setSpacing(10)
 
+		bloc_marque = QWidget()
+		bloc_marque_layout = QHBoxLayout(bloc_marque)
+		bloc_marque_layout.setContentsMargins(0, 0, 0, 0)
+		bloc_marque_layout.setSpacing(11)
+		logo = QLabel()
+		logo.setFixedSize(46, 46)
+		logo.setPixmap(self._creer_logo())
+		texte_marque = QVBoxLayout()
+		texte_marque.setContentsMargins(0, 0, 0, 0)
+		texte_marque.setSpacing(2)
 		marque = QLabel("EduPaie")
 		marque.setObjectName("brand")
 		sous_marque = QLabel("GESTION SCOLAIRE")
 		sous_marque.setObjectName("brandCaption")
-		navigation.addWidget(marque)
-		navigation.addWidget(sous_marque)
+		texte_marque.addWidget(marque)
+		texte_marque.addWidget(sous_marque)
+		bloc_marque_layout.addWidget(logo)
+		bloc_marque_layout.addLayout(texte_marque)
+		navigation.addWidget(bloc_marque)
 		navigation.addSpacing(26)
 
 		self.bouton_tableau = QPushButton("Vue d’ensemble")
 		self.bouton_tableau.setObjectName("navButton")
+		self.bouton_tableau.setCheckable(True)
 		self.bouton_eleves = QPushButton("Élèves et paiements")
 		self.bouton_eleves.setObjectName("navButton")
+		self.bouton_eleves.setCheckable(True)
+		self.groupe_navigation = QButtonGroup(self)
+		self.groupe_navigation.setExclusive(True)
+		self.groupe_navigation.addButton(self.bouton_tableau)
+		self.groupe_navigation.addButton(self.bouton_eleves)
+		self.bouton_tableau.setChecked(True)
 		self.bouton_tableau.clicked.connect(self._afficher_tableau)
-		self.bouton_eleves.clicked.connect(self._afficher_tableau)
+		self.bouton_eleves.clicked.connect(self._afficher_liste_eleves)
 		navigation.addWidget(self.bouton_tableau)
 		navigation.addWidget(self.bouton_eleves)
 		navigation.addStretch(1)
@@ -101,17 +124,19 @@ class MainWindow(QMainWindow):
 		principal.addWidget(zone_principale, 1)
 
 		self.setCentralWidget(contenu)
+		self.setWindowIcon(QIcon(self._creer_logo()))
 		self.setStatusBar(QStatusBar())
 		self.statusBar().showMessage("Prêt")
 		self.setStyleSheet(
 			"""
 			QWidget#appRoot { background: #F4F7F5; color: #1D2A29; }
 			QWidget#sidebar { background: #173B39; color: #FFFFFF; }
-			QLabel#brand { color: #FFFFFF; font-size: 25px; font-weight: 700; }
-			QLabel#brandCaption { color: #BBD0CB; font-size: 10px; font-weight: 600; }
+			QLabel#brand { color: #FFFFFF; font-size: 23px; font-weight: 700; }
+			QLabel#brandCaption { color: #D5C18E; font-size: 9px; font-weight: 600; }
 			QLabel#sidebarFooter { color: #BBD0CB; font-size: 11px; }
 			QPushButton#navButton { min-height: 40px; padding: 0 12px; text-align: left; color: #E7F0ED; background: transparent; border: none; border-radius: 4px; }
 			QPushButton#navButton:hover { background: #285651; }
+			QPushButton#navButton:checked { background: #285651; color: #FFFFFF; font-weight: 600; }
 			QWidget#topbar { background: #FFFFFF; border-bottom: 1px solid #E0E8E5; }
 			QLabel#sectionHeading { color: #173B39; font-size: 16px; font-weight: 700; }
 			QPushButton#primaryButton { min-height: 38px; padding: 0 14px; color: #FFFFFF; background: #176B67; border: none; border-radius: 4px; font-weight: 600; }
@@ -121,10 +146,54 @@ class MainWindow(QMainWindow):
 			"""
 		)
 
+	@staticmethod
+	def _creer_logo() -> QPixmap:
+		"""Dessine le pictogramme EduPaie: un bâtiment scolaire stylisé."""
+		pixmap = QPixmap(46, 46)
+		pixmap.fill(Qt.GlobalColor.transparent)
+		painter = QPainter(pixmap)
+		painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+		painter.setPen(Qt.PenStyle.NoPen)
+		painter.setBrush(QColor("#E7B958"))
+		painter.drawRoundedRect(1, 1, 44, 44, 9, 9)
+
+		painter.setBrush(QColor("#FFFFFF"))
+		facade = QPainterPath()
+		facade.addRoundedRect(11, 20, 24, 18, 2, 2)
+		painter.drawPath(facade)
+
+		painter.setBrush(QColor("#173B39"))
+		toit = QPainterPath()
+		toit.moveTo(8, 21)
+		toit.lineTo(23, 10)
+		toit.lineTo(38, 21)
+		toit.closeSubpath()
+		painter.drawPath(toit)
+		painter.drawRoundedRect(21, 27, 5, 11, 1, 1)
+		painter.drawRoundedRect(14, 24, 4, 4, 1, 1)
+		painter.drawRoundedRect(28, 24, 4, 4, 1, 1)
+		painter.setPen(QPen(QColor("#173B39"), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+		painter.drawLine(8, 39, 38, 39)
+		painter.end()
+		return pixmap
+
 	def _afficher_tableau(self) -> None:
+		self._mode_liste = "vue_ensemble"
+		self._afficher_liste(vue_ensemble=True)
+
+	def _afficher_liste_eleves(self) -> None:
+		self._mode_liste = "eleves"
+		self._afficher_liste(vue_ensemble=False)
+
+	def _afficher_liste(self, vue_ensemble: bool) -> None:
 		self._eleve_id_courant = None
+		page_courante = self.pages.currentWidget()
+		if page_courante is not self.tableau:
+			self.pages.removeWidget(page_courante)
+			page_courante.deleteLater()
 		self.pages.setCurrentWidget(self.tableau)
-		self.titre_section.setText("Vue d’ensemble")
+		self.tableau.definir_mode(vue_ensemble)
+		self.titre_section.setText("Vue d’ensemble" if vue_ensemble else "Élèves et paiements")
 		self.bouton_ajouter.show()
 		self.bouton_supprimer.hide()
 		self.tableau.rafraichir()
@@ -132,11 +201,13 @@ class MainWindow(QMainWindow):
 	def _ouvrir_fiche(self, eleve_id: int) -> None:
 		self._eleve_id_courant = eleve_id
 		fiche = EleveDetailWidget(eleve_id)
-		fiche.retour_demande.connect(self._afficher_tableau)
+		fiche.retour_demande.connect(self._retour_liste)
 		fiche.modification_demandee.connect(self._modifier_eleve)
 		fiche.paiement_demande.connect(self._enregistrer_paiement)
 		fiche.reimpression_recu_demandee.connect(self._reimprimer_recu)
 		ancienne_page = self.pages.currentWidget()
+		if ancienne_page is self.tableau:
+			self._mode_liste = "vue_ensemble" if self.bouton_tableau.isChecked() else "eleves"
 		if ancienne_page is not self.tableau:
 			self.pages.removeWidget(ancienne_page)
 			ancienne_page.deleteLater()
@@ -145,6 +216,14 @@ class MainWindow(QMainWindow):
 		self.titre_section.setText("Fiche élève")
 		self.bouton_ajouter.hide()
 		self.bouton_supprimer.show()
+
+	def _retour_liste(self) -> None:
+		if self._mode_liste == "eleves":
+			self.bouton_eleves.setChecked(True)
+			self._afficher_liste_eleves()
+		else:
+			self.bouton_tableau.setChecked(True)
+			self._afficher_tableau()
 
 	def _ajouter_eleve(self) -> None:
 		dialogue = EleveFormDialog(parent=self)
@@ -183,7 +262,7 @@ class MainWindow(QMainWindow):
 			self._afficher_erreur("Suppression impossible", exc)
 			return
 		self.statusBar().showMessage("L’élève a été supprimé.", 5000)
-		self._afficher_tableau()
+		self._retour_liste()
 
 	def _supprimer_selection(self) -> None:
 		if self._eleve_id_courant is not None:

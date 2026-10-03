@@ -25,10 +25,11 @@ STATUS_MAP = {
 }
 
 
-def format_currency(value: float, currency: str = "EUR") -> str:
+def format_currency(value: float, currency: str = "FCFA") -> str:
     """Formate un montant monétaire avec un séparateur de milliers."""
     amount = float(value)
-    return f"{amount:,.2f} {currency}"
+    formatted = f"{amount:,.2f}".replace(",", " ").replace(".", ",")
+    return f"{formatted} {currency}"
 
 
 _receipt_counter = 0

@@ -4,7 +4,7 @@ from data.database import init_db
 
 def main():
     init_db()
-    from ui.main_window import MainWindow
+    from GestionEleve.main_window import MainWindow
 
     app = QApplication(sys.argv)
     window = MainWindow()

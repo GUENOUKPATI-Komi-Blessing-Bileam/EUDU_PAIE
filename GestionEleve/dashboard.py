@@ -38,14 +38,15 @@ class DashboardWidget(QWidget):
 		layout.setContentsMargins(28, 24, 28, 28)
 		layout.setSpacing(18)
 
-		titre = QLabel("Vue d’ensemble")
-		titre.setObjectName("pageTitle")
-		sous_titre = QLabel("Suivi des inscriptions et des encaissements")
-		sous_titre.setObjectName("pageSubtitle")
-		layout.addWidget(titre)
-		layout.addWidget(sous_titre)
+		self.titre_page = QLabel("Vue d’ensemble")
+		self.titre_page.setObjectName("pageTitle")
+		self.sous_titre_page = QLabel("Suivi des inscriptions et des encaissements")
+		self.sous_titre_page.setObjectName("pageSubtitle")
+		layout.addWidget(self.titre_page)
+		layout.addWidget(self.sous_titre_page)
 
-		indicateurs = QGridLayout()
+		self.zone_indicateurs = QWidget()
+		indicateurs = QGridLayout(self.zone_indicateurs)
 		indicateurs.setHorizontalSpacing(12)
 		indicateurs.setVerticalSpacing(12)
 		self._valeurs_indicateurs: dict[str, QLabel] = {}
@@ -59,7 +60,7 @@ class DashboardWidget(QWidget):
 			carte, valeur = self._creer_carte(libelle, couleur)
 			self._valeurs_indicateurs[cle] = valeur
 			indicateurs.addWidget(carte, 0, index)
-		layout.addLayout(indicateurs)
+		layout.addWidget(self.zone_indicateurs)
 
 		filtres = QHBoxLayout()
 		filtres.setSpacing(10)
@@ -165,6 +166,16 @@ class DashboardWidget(QWidget):
 		self.filtre_classe.blockSignals(False)
 		self._afficher_eleves()
 
+	def definir_mode(self, vue_ensemble: bool) -> None:
+		"""Affiche les indicateurs seulement dans la vue d’ensemble."""
+		self.zone_indicateurs.setVisible(vue_ensemble)
+		if vue_ensemble:
+			self.titre_page.setText("Vue d’ensemble")
+			self.sous_titre_page.setText("Suivi des inscriptions et des encaissements")
+		else:
+			self.titre_page.setText("Élèves et paiements")
+			self.sous_titre_page.setText("Rechercher un élève, consulter son solde et son historique")
+
 	def _afficher_eleves(self, *_: object) -> None:
 		recherche = self.recherche.text().strip().casefold()
 		classe = self.filtre_classe.currentData()
@@ -208,4 +219,4 @@ class DashboardWidget(QWidget):
 	@staticmethod
 	def _monnaie(montant: float) -> str:
 		texte = f"{montant:,.2f}".replace(",", " ").replace(".", ",")
-		return f"{texte} €"
+		return f"{texte} FCFA"

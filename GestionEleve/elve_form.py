@@ -76,8 +76,6 @@ class EleveFormDialog(QDialog):
 				"Terminale",
 			]
 		)
-		self.classe.setCurrentIndex(-1)
-		self.classe.setCurrentText("")
 		self.classe.setEditable(True)
 		self.classe.setMinimumContentsLength(12)
 		self.annee_scolaire = QLineEdit()
@@ -88,7 +86,7 @@ class EleveFormDialog(QDialog):
 		self.total_du.setRange(0, 1_000_000_000)
 		self.total_du.setDecimals(2)
 		self.total_du.setSingleStep(1000)
-		self.total_du.setSuffix(" €")
+		self.total_du.setSuffix(" FCFA")
 		self.total_du.setKeyboardTracking(False)
 
 		formulaire.addRow("Nom *", self.nom)
@@ -195,4 +193,4 @@ class EleveFormDialog(QDialog):
 	@staticmethod
 	def _monnaie(montant: float) -> str:
 		texte = f"{montant:,.2f}".replace(",", " ").replace(".", ",")
-		return f"{texte} €"
+		return f"{texte} FCFA"

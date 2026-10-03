@@ -235,4 +235,4 @@ class EleveDetailWidget(QWidget):
 	@staticmethod
 	def _monnaie(montant: float) -> str:
 		texte = f"{montant:,.2f}".replace(",", " ").replace(".", ",")
-		return f"{texte} €"
+		return f"{texte} FCFA"
