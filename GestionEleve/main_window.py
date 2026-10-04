@@ -74,15 +74,22 @@ class MainWindow(QMainWindow):
 		self.bouton_eleves = QPushButton("Élèves et paiements")
 		self.bouton_eleves.setObjectName("navButton")
 		self.bouton_eleves.setCheckable(True)
+		self.bouton_suivi = QPushButton("Suivi des inscriptions\net encaissements")
+		self.bouton_suivi.setObjectName("navButton")
+		self.bouton_suivi.setCheckable(True)
+		self.bouton_suivi.setMinimumHeight(54)
 		self.groupe_navigation = QButtonGroup(self)
 		self.groupe_navigation.setExclusive(True)
 		self.groupe_navigation.addButton(self.bouton_tableau)
 		self.groupe_navigation.addButton(self.bouton_eleves)
+		self.groupe_navigation.addButton(self.bouton_suivi)
 		self.bouton_tableau.setChecked(True)
 		self.bouton_tableau.clicked.connect(self._afficher_tableau)
 		self.bouton_eleves.clicked.connect(self._afficher_liste_eleves)
+		self.bouton_suivi.clicked.connect(self._afficher_suivi)
 		navigation.addWidget(self.bouton_tableau)
 		navigation.addWidget(self.bouton_eleves)
+		navigation.addWidget(self.bouton_suivi)
 		navigation.addStretch(1)
 
 		pied_navigation = QLabel("Suivi des frais de scolarité")
@@ -118,6 +125,7 @@ class MainWindow(QMainWindow):
 
 		self.pages = QStackedWidget()
 		self.tableau = DashboardWidget()
+		self.tableau.definir_mode("vue_ensemble")
 		self.tableau.eleve_selectionne.connect(self._ouvrir_fiche)
 		self.pages.addWidget(self.tableau)
 		zone_layout.addWidget(self.pages, 1)
@@ -179,21 +187,31 @@ class MainWindow(QMainWindow):
 
 	def _afficher_tableau(self) -> None:
 		self._mode_liste = "vue_ensemble"
-		self._afficher_liste(vue_ensemble=True)
+		self._afficher_liste("vue_ensemble")
 
 	def _afficher_liste_eleves(self) -> None:
 		self._mode_liste = "eleves"
-		self._afficher_liste(vue_ensemble=False)
+		self._afficher_liste("eleves")
 
-	def _afficher_liste(self, vue_ensemble: bool) -> None:
+	def _afficher_suivi(self) -> None:
+		self._mode_liste = "suivi"
+		self._afficher_liste("suivi")
+
+	def _afficher_liste(self, mode: str) -> None:
 		self._eleve_id_courant = None
 		page_courante = self.pages.currentWidget()
 		if page_courante is not self.tableau:
 			self.pages.removeWidget(page_courante)
 			page_courante.deleteLater()
 		self.pages.setCurrentWidget(self.tableau)
-		self.tableau.definir_mode(vue_ensemble)
-		self.titre_section.setText("Vue d’ensemble" if vue_ensemble else "Élèves et paiements")
+		self.tableau.definir_mode(mode)
+		self.titre_section.setText(
+			{
+				"vue_ensemble": "Vue d’ensemble",
+				"eleves": "Élèves et paiements",
+				"suivi": "Suivi des inscriptions et encaissements",
+			}[mode]
+		)
 		self.bouton_ajouter.show()
 		self.bouton_supprimer.hide()
 		self.tableau.rafraichir()
@@ -207,7 +225,12 @@ class MainWindow(QMainWindow):
 		fiche.reimpression_recu_demandee.connect(self._reimprimer_recu)
 		ancienne_page = self.pages.currentWidget()
 		if ancienne_page is self.tableau:
-			self._mode_liste = "vue_ensemble" if self.bouton_tableau.isChecked() else "eleves"
+			if self.bouton_suivi.isChecked():
+				self._mode_liste = "suivi"
+			elif self.bouton_tableau.isChecked():
+				self._mode_liste = "vue_ensemble"
+			else:
+				self._mode_liste = "eleves"
 		if ancienne_page is not self.tableau:
 			self.pages.removeWidget(ancienne_page)
 			ancienne_page.deleteLater()
@@ -221,6 +244,9 @@ class MainWindow(QMainWindow):
 		if self._mode_liste == "eleves":
 			self.bouton_eleves.setChecked(True)
 			self._afficher_liste_eleves()
+		elif self._mode_liste == "suivi":
+			self.bouton_suivi.setChecked(True)
+			self._afficher_suivi()
 		else:
 			self.bouton_tableau.setChecked(True)
 			self._afficher_tableau()

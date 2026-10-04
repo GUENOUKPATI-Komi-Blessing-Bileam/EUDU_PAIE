@@ -62,6 +62,10 @@ class DashboardWidget(QWidget):
 			indicateurs.addWidget(carte, 0, index)
 		layout.addWidget(self.zone_indicateurs)
 
+		self.zone_liste = QWidget()
+		contenu_liste = QVBoxLayout(self.zone_liste)
+		contenu_liste.setContentsMargins(0, 0, 0, 0)
+		contenu_liste.setSpacing(12)
 		filtres = QHBoxLayout()
 		filtres.setSpacing(10)
 		self.recherche = QLineEdit()
@@ -76,7 +80,7 @@ class DashboardWidget(QWidget):
 		filtres.addWidget(self.recherche, 1)
 		filtres.addWidget(self.filtre_classe)
 		filtres.addWidget(self.filtre_statut)
-		layout.addLayout(filtres)
+		contenu_liste.addLayout(filtres)
 
 		self.table = QTableWidget(0, 6)
 		self.table.setHorizontalHeaderLabels(
@@ -93,7 +97,8 @@ class DashboardWidget(QWidget):
 			0, self.table.horizontalHeader().ResizeMode.Stretch
 		)
 		self.table.setMinimumHeight(300)
-		layout.addWidget(self.table, 1)
+		contenu_liste.addWidget(self.table, 1)
+		layout.addWidget(self.zone_liste, 1)
 
 		self.recherche.textChanged.connect(self._afficher_eleves)
 		self.filtre_classe.currentIndexChanged.connect(self._afficher_eleves)
@@ -166,15 +171,27 @@ class DashboardWidget(QWidget):
 		self.filtre_classe.blockSignals(False)
 		self._afficher_eleves()
 
-	def definir_mode(self, vue_ensemble: bool) -> None:
-		"""Affiche les indicateurs seulement dans la vue d’ensemble."""
-		self.zone_indicateurs.setVisible(vue_ensemble)
-		if vue_ensemble:
-			self.titre_page.setText("Vue d’ensemble")
-			self.sous_titre_page.setText("Suivi des inscriptions et des encaissements")
-		else:
-			self.titre_page.setText("Élèves et paiements")
-			self.sous_titre_page.setText("Rechercher un élève, consulter son solde et son historique")
+	def definir_mode(self, mode: str) -> None:
+		"""Configure les indicateurs et la liste selon la page demandée."""
+		self.zone_indicateurs.setVisible(mode in ("vue_ensemble", "suivi"))
+		self.zone_liste.setVisible(mode in ("vue_ensemble", "eleves"))
+		pages = {
+			"vue_ensemble": (
+				"Vue d’ensemble",
+				"Élèves inscrits et suivi des encaissements",
+			),
+			"eleves": (
+				"Élèves et paiements",
+				"Rechercher un élève, consulter son solde et son historique",
+			),
+			"suivi": (
+				"Suivi des inscriptions et encaissements",
+				"Indicateurs de l’établissement et sommes restant à encaisser",
+			),
+		}
+		titre, sous_titre = pages[mode]
+		self.titre_page.setText(titre)
+		self.sous_titre_page.setText(sous_titre)
 
 	def _afficher_eleves(self, *_: object) -> None:
 		recherche = self.recherche.text().strip().casefold()
