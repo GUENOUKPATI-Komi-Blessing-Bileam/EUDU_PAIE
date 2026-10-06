@@ -11,16 +11,28 @@ Gestion centralisée de la connexion SQLite.
 """
 
 import os
+import shutil
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Generator
 
 # ----------------------------------------------------------------------
-# Chemin du fichier .db (placé à la racine du projet, côté exécutable)
+# Chemin persistant de la base utilisateur
 # ----------------------------------------------------------------------
-BASE_DIR = Path(__file__).resolve().parent.parent   # src/
-DB_PATH = BASE_DIR / "school_payments.db"           # ./school_payments.db
-SCHEMA_PATH = BASE_DIR / "schema.sql"               # ./schema.sql
+BASE_DIR = Path(__file__).resolve().parent.parent
+SCHEMA_PATH = BASE_DIR / "schema.sql"
+APP_DATA_DIR = Path(
+    os.environ.get("APPDATA")
+    or os.environ.get("LOCALAPPDATA")
+    or (Path.home() / ".local" / "share")
+) / "EduPaie"
+DB_PATH = APP_DATA_DIR / "school_payments.db"
+LEGACY_DB_PATHS = (
+    BASE_DIR / "school_payments.db",
+    Path(sys.executable).resolve().parent / "school_payments.db",
+    Path(sys.executable).resolve().parent.parent / "school_payments.db",
+)
 
 # ----------------------------------------------------------------------
 # Singleton SQLite connection
@@ -79,8 +91,8 @@ class transaction:
 # ----------------------------------------------------------------------
 def init_db(force: bool = False) -> None:
     """
-    Applique le schéma SQL à chaque démarrage afin de créer les tables
-    manquantes sans modifier celles qui existent déjà.
+    Ouvre la base utilisateur persistante et applique le schéma SQL.
+    Au premier lancement, récupère une ancienne base locale si disponible.
     *force* : si True, recrée la base vide (usage réservé aux tests).
     """
     if force:
@@ -89,6 +101,12 @@ def init_db(force: bool = False) -> None:
             DB_PATH.unlink()
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if not force and not DB_PATH.exists():
+        for ancienne_base in LEGACY_DB_PATHS:
+            if ancienne_base.is_file() and ancienne_base.resolve() != DB_PATH.resolve():
+                shutil.copy2(ancienne_base, DB_PATH)
+                break
+
     if not SCHEMA_PATH.is_file():
         raise FileNotFoundError(f"Fichier de schéma introuvable : {SCHEMA_PATH}")
 
